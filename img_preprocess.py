@@ -7,7 +7,7 @@ from cv2.typing import Size, Rect
 from tqdm import tqdm
 
 
-def corp_resize_and_pad_naive(img: np.ndarray, box: Rect, dst_size: Size) -> np.ndarray:
+def crop_resize_and_pad_naive(img: np.ndarray, box: Rect, dst_size: Size) -> np.ndarray:
     img = img[box[1]:box[1] + box[3], box[0]:box[0] + box[2]]
     origin_height, origin_width = img.shape[:2]
     dst_width, dst_height = dst_size
@@ -26,7 +26,7 @@ def corp_resize_and_pad_naive(img: np.ndarray, box: Rect, dst_size: Size) -> np.
     return out
 
 
-def corp_resize_and_pad(img: np.ndarray, box: Rect, dst_size: Size) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def crop_resize_and_pad(img: np.ndarray, box: Rect, dst_size: Size) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     sw, sh = box[2:]
     dw, dh = dst_size
     scale = min(dw / sw, dh / sh)
@@ -34,8 +34,10 @@ def corp_resize_and_pad(img: np.ndarray, box: Rect, dst_size: Size) -> Tuple[np.
 
     scx = box[0] + box[2] * 0.5
     scy = box[1] + box[3] * 0.5
+
     dcx = dst_size[0] * 0.5
     dcy = dst_size[1] * 0.5
+
     x_offset = dcx - scx * scale
     y_offset = dcy - scy * scale
 
@@ -56,10 +58,10 @@ def corp_resize_and_pad(img: np.ndarray, box: Rect, dst_size: Size) -> Tuple[np.
 def test_function():
     img = cv2.imread("test.jpg")
 
-    processed_naive, _, _ = corp_resize_and_pad(img, (100, 200, 200, 100), (384, 256))
+    processed_naive, _, _ = crop_resize_and_pad(img, (100, 200, 200, 100), (384, 256))
     cv2.imwrite("test_processed.jpg", processed_naive)
 
-    processed = corp_resize_and_pad_naive(img, (100, 200, 200, 100), (384, 256))
+    processed = crop_resize_and_pad_naive(img, (100, 200, 200, 100), (384, 256))
     cv2.imwrite("test_processed_naive.jpg", processed)
 
     cv2.rectangle(img, (100, 200), (400, 600), (225, 0, 0), 10)
@@ -67,14 +69,14 @@ def test_function():
 
 
 def test_speed():
-    test_img = np.ones([1080, 1920, 3], dtype=np.uint8) * 127
+    test_img = np.random.randint(0, 255, size=[1080, 1920, 3], dtype=np.uint8)
     N = 100000
 
     for _ in tqdm(range(N), desc="Affine"):
-        corp_resize_and_pad(test_img, (100, 200, 300, 400), (256, 192))
+        crop_resize_and_pad(test_img, (100, 200, 300, 400), (256, 192))
 
     for _ in tqdm(range(N), desc="Naive"):
-        corp_resize_and_pad_naive(test_img, (100, 200, 300, 400), (256, 192))
+        crop_resize_and_pad_naive(test_img, (100, 200, 300, 400), (256, 192))
 
 
 test_function()
