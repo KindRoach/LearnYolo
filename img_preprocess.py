@@ -30,7 +30,8 @@ def crop_resize_and_pad_naive(img: np.ndarray, box: Rect, dst_size: Size) -> np.
     return resize_and_pad_naive(img, dst_size)
 
 
-def resize_and_pad(img: np.ndarray, dst_size: Size) -> Tuple[np.ndarray, np.ndarray]:
+def resize_and_pad(img: np.ndarray, dst_size: Size, pad: Tuple[int, int, int] = (0, 0, 0)) \
+        -> Tuple[np.ndarray, np.ndarray]:
     sw, sh = img.shape[1], img.shape[0]
     dw, dh = dst_size
     scale = min(dw / sw, dh / sh)
@@ -55,7 +56,7 @@ def resize_and_pad(img: np.ndarray, dst_size: Size) -> Tuple[np.ndarray, np.ndar
         [0, s_inv, - y_offset * s_inv],
     ])
 
-    out = cv2.warpAffine(img, mat, dst_size)
+    out = cv2.warpAffine(img, mat, dst_size, borderValue=pad)
     return out, inv_mat
 
 
@@ -99,6 +100,14 @@ def crop_resize_and_pad_blank_border(img: np.ndarray, box: Rect, dst_size: Size)
     return out, inv_mat
 
 
+def inv_points(points: np.ndarray, inv_mat: np.ndarray) -> np.ndarray:
+    n_points = points.shape[0]
+    points = points.T
+    pad_1 = np.ones((1, n_points), dtype=points.dtype)
+    points = np.concatenate((points, pad_1), axis=0)
+    return (inv_mat @ points).T
+
+
 def test_function():
     img = cv2.imread("test.jpg")
 
@@ -126,5 +135,6 @@ def test_speed():
         crop_resize_and_pad_naive(test_img, (100, 200, 300, 400), (256, 192))
 
 
-test_function()
-test_speed()
+if __name__ == '__main__':
+    test_function()
+    test_speed()
